@@ -1,0 +1,215 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+	<title>Phaser - Making your first game, part 1</title>
+	<script type="text/javascript" src="js/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+
+/**
+ * Randomize array element order in-place.
+ * Using Durstenfeld shuffle algorithm.
+ */
+function shuffleArray(array) {
+    for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    return array;
+}
+
+function preload() {
+
+	game.load.image('asteroide', 'assets/asteroideSprite.png');
+	game.load.image('city', 'assets/cityLandscape.jpg');
+	game.load.image('city150', 'assets/cityLandscape150.jpg');
+	game.load.image('city400', 'assets/cityLandscape400.jpg');
+
+	//Carga de los 10 asteroides TESTEO
+	for (var i = 1; i < 11; i++)
+	{
+		var asteroideI = "asteroide" + i;
+		var directorioI = "assets/asteroidesCarpeta/asteroide" + i + ".png";
+		game.load.image(asteroideI, directorioI);
+
+		console.log(asteroideI);
+		console.log(directorioI);
+	}
+}
+
+var asteroides; //Grupo asteroides
+var city; //Grupo city
+var score = 0;
+var scoreText;
+var chocadoText;
+var hasGanadoText;
+
+
+/*Comprueba si el sprite clickeado es el asteroide mayor, en caso afirmativo
+destruye el sprite con sprite.destroy()*/
+function comprobarClick(sprite, pointer) {
+
+	if(sprite.numero == valorMaximo) { //Si hemos clickeado el asteroide mayor
+		sprite.destroy();
+		console.log("borrado el mayor");
+	}
+
+}
+
+function create() {
+
+	//Sistema de fisicas ARCADE
+	game.physics.startSystem(Phaser.Physics.ARCADE);
+	
+	//Añadimos el background
+	game.stage.backgroundColor = '#b9daed';
+
+	//Creamos los dos textos, invisibles por defecto
+	hasGanadoText = game.add.text(300, 200, 'HAS GANADO', {fontSize: '120px', fill: '#000'});
+	chocadoText = game.add.text(300, 200, 'GAME OVER', {fontSize: '120px', fill: '#000'});
+	hasGanadoText.visible = false;
+	chocadoText.visible = false;
+
+	//Creamos el grupo city
+	city = game.add.group(); 
+	city.enableBody = true;
+	var city1 = city.create(0, game.height - 150, 'city400');
+	var city2 = city.create(400, game.height - 150, 'city400');	
+	city1.body.immovable = true;
+	city2.body.immovable = true;
+	
+	//Activamos físicas al grupo ciudad
+	game.physics.arcade.enable(city);
+
+	//Añadimos grupo asteroides y activamos el body
+	asteroides = game.add.group();
+	asteroides.enableBody = true;
+
+
+
+	//Crear array [1 2 3 4 ... n] ordenados.
+	var arrayAsteroidesRandom = [];
+	for (var i = 1; i < 11; i++) 
+	{
+		arrayAsteroidesRandom.push(i);
+	}
+
+	//Creamos array Random.
+	arrayAsteroidesRandom = shuffleArray(arrayAsteroidesRandom);
+	console.log(arrayAsteroidesRandom);
+    //  Here we'll create 12 of them evenly spaced apart
+
+    var j = 0; //Indice que recorre arrayAsteroidesRandom
+    for (var i = 1; i < 11; i++)
+    {
+        //  Crea cada asteroideI y lo añade al grupo asteroides (se podrán referir a ellos como hijos - children)
+        var asteroideJ = "asteroide" + arrayAsteroidesRandom[j];
+        //arrayAsteroidesRandom es un vector que almacena al azar numeros no repetidos del 1 al 10.
+        asteroide = asteroides.create(i * 70, 0, asteroideJ);
+
+        //  Let gravity do its thing
+        asteroide.body.gravity.y = 30;
+
+        //  This just gives each star a slightly random bounce value
+        asteroide.body.bounce.y = 0.6 + Math.random() * 0.3;
+        asteroide.numero = arrayAsteroidesRandom[j]; //propiedad numero va asociado a la imagen asteroide correspondiente.
+
+        //Añadimos evento de entrada a cada sprite y vemos la función cuando se clickee cada uno:
+        asteroide.inputEnabled = true;
+        //Añadimos que aparezca otro cursor al pasar por encima el ratón
+        asteroide.input.useHandCursor = true;
+
+        asteroide.events.onInputDown.add(comprobarClick, this);
+                
+        //Numero al azar
+        //Texto anclado con ese numero y propiedad
+        j += 1;
+
+    }
+
+    //Activamos físicas en los asteroides
+    game.physics.arcade.enable(asteroides, 20);
+    game.physics.arcade.enable(city, 20);
+    //Create textScore
+
+   
+}
+
+var valorMaximo;
+
+/* Function que actualiza la variable global valorMaximo con el mayor valor de entre 
+todos los asteroides children en un momento determinado.
+*/
+function actualizarValorMaximo() {
+	//Recorremos todos los children asteroides
+	var vectorAsteroidesChildren = asteroides.children;
+    var asteroideSpriteChildren;
+    var numeroI;
+    var numeroMayor = 0;
+
+    for (var indice in vectorAsteroidesChildren) {
+    	asteroideSpriteChildren = vectorAsteroidesChildren[indice];
+    	numeroI = asteroideSpriteChildren.numero;
+
+    	if (numeroI > numeroMayor) {
+    		numeroMayor = numeroI;
+    	}
+    } //A la salida de este for, numeroMayor está actualizado con el mayor numero de los children.
+	
+    valorMaximo = numeroMayor; //Actualizamos variable global valorMaximo
+    console.log(valorMaximo);
+    console.log(indice);
+}
+
+
+function update() {
+
+	
+	actualizarValorMaximo();
+
+
+	//Si colisionan asteroides con city
+	game.physics.arcade.collide(asteroides, city, hasChocado, null, this);
+	console.log(prueba);
+	//comprobarClick()
+	if(valorMaximo == 0) {
+		hasGanado();
+	}
+	
+	/*Clickeo en un asteroide del grupo asteroides. Clickeo realmente en un asteroide children.
+	//children.numero es el numero que yo clicko. Ese numero se compara con el mayor numero
+	//existente en el grupo asteroides. Si ese numero es igual que el numero mayor entonces
+	hemos dado en el mayor y eliminamos ese asteroide. En el siguiente update tiene que estar
+	actualizada la variable que almacena el valor maximo y repetir el proceso.*/
+
+}
+var prueba = false;
+function hasChocado(asteroides, city) {
+	chocadoText.visible = true;
+	prueba = true;
+}
+
+
+function hasGanado() {
+	hasGanadoText.visible = true;
+
+}
+</script>
+
+</body>
+</html>
